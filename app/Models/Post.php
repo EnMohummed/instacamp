@@ -25,11 +25,24 @@ class Post extends Model
     
     public function likes(): HasMany
     {
-        return $this->hasMany(Like::class);
+        return $this->hasMany(Like::class, 'post_id', '_id');
     }
     
     public function comments(): HasMany
     {
-        return $this->hasMany(Comment::class);
+        return $this->hasMany(Comment::class, 'post_id', '_id');
+    }
+    
+    /**
+     * Check if the post is liked by a specific user.
+     */
+    public function likedBy(?User $user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+        
+        $userId = $user->_id ?? $user->id;
+        return $this->likes()->where('user_id', $userId)->exists();
     }
 }

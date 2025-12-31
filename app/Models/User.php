@@ -34,16 +34,16 @@ class User extends Authenticatable
     
     public function posts(): HasMany
     {
-        return $this->hasMany(related: Post::class);
+        return $this->hasMany(Post::class, 'user_id', '_id');
     }
     
     public function likes(): HasMany
     {
-        return $this->hasMany(related: Like::class);
+        return $this->hasMany(Like::class, 'user_id', '_id');
     }
     
     public function comments(): HasMany
     {
-        return $this->hasMany(related: Comment::class);
+        return $this->hasMany(Comment::class, 'user_id', '_id');
     }
 }

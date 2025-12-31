@@ -47,7 +47,7 @@ class PostController extends Controller
             'image_path' => $imagePath,
         ]);
         
-        return redirect('/profile/' . auth()->user()->id);
+        return redirect()->route('profile.show', auth()->user());
     }
 
     /**
@@ -63,7 +63,11 @@ class PostController extends Controller
      */
     public function edit(Post $post): View
     {
-        if (auth()->id() !== $post->user_id) {
+        $userId = auth()->id();
+        $postUserId = $post->user_id;
+        
+        // Handle MongoDB ObjectId comparison
+        if ((string)$userId !== (string)$postUserId) {
             abort(403, 'Unauthorized action.');
         }
         return view('posts.edit', compact('post'));
@@ -74,14 +78,31 @@ class PostController extends Controller
      */
     public function update(Request $request, Post $post): RedirectResponse
     {
-        if (auth()->id() !== $post->user_id) {
+        $userId = auth()->id();
+        $postUserId = $post->user_id;
+        
+        // Handle MongoDB ObjectId comparison
+        if ((string)$userId !== (string)$postUserId) {
             abort(403, 'Unauthorized action.');
         }
         $data = $request->validate([
             'caption' => 'required',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
+        
+        // Handle image upload if provided
+        if ($request->hasFile('image')) {
+            // Delete old image
+            if ($post->image_path) {
+                Storage::disk('public')->delete($post->image_path);
+            }
+            // Store new image
+            $imagePath = $request->file('image')->store('uploads', 'public');
+            $data['image_path'] = $imagePath;
+        }
+        
         $post->update($data);
-        return redirect('/posts/' . $post->id);
+        return redirect()->route('posts.show', $post);
     }
 
     /**
@@ -89,12 +110,16 @@ class PostController extends Controller
      */
     public function destroy(Post $post): RedirectResponse
     {
-        if (auth()->id() !== $post->user_id) {
+        $userId = auth()->id();
+        $postUserId = $post->user_id;
+        
+        // Handle MongoDB ObjectId comparison
+        if ((string)$userId !== (string)$postUserId) {
             abort(403, 'Unauthorized action.');
         }
 
         Storage::disk('public')->delete($post->image_path);
         $post->delete();
-        return redirect('/profile/' . auth()->user()->id);
+        return redirect()->route('profile.show', auth()->user());
     }
 }

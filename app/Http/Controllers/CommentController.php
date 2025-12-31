@@ -27,10 +27,10 @@ class CommentController extends Controller
         $post->comments()->create([
             'content' => $data['content'],
             'user_id' => auth()->id(),
-            'post_id' => $post->id,
+            'post_id' => $post->_id ?? $post->id,
         ]);
         
-        return redirect('/posts/' . $post->id)->with('success', 'Comment added successfully!');
+        return redirect()->route('posts.show', $post)->with('success', 'Comment added successfully!');
     }
 
     /**
@@ -38,7 +38,11 @@ class CommentController extends Controller
      */
     public function edit(Comment $comment): View
     {
-        if (auth()->id() !== $comment->user_id) {
+        $userId = auth()->id();
+        $commentUserId = $comment->user_id;
+        
+        // Handle MongoDB ObjectId comparison
+        if ((string)$userId !== (string)$commentUserId) {
             abort(403, 'Unauthorized action.');
         }
         return view('comments.edit', compact('comment'));
@@ -49,7 +53,11 @@ class CommentController extends Controller
      */
     public function update(Request $request, Comment $comment): RedirectResponse
     {
-        if (auth()->id() !== $comment->user_id) {
+        $userId = auth()->id();
+        $commentUserId = $comment->user_id;
+        
+        // Handle MongoDB ObjectId comparison
+        if ((string)$userId !== (string)$commentUserId) {
             abort(403, 'Unauthorized action.');
         }
         
@@ -59,7 +67,8 @@ class CommentController extends Controller
         
         $comment->update($data);
         
-        return redirect('/posts/' . $comment->post_id)->with('success', 'Comment updated successfully!');
+        $post = Post::find($comment->post_id);
+        return redirect()->route('posts.show', $post)->with('success', 'Comment updated successfully!');
     }
 
     /**
@@ -67,13 +76,17 @@ class CommentController extends Controller
      */
     public function destroy(Comment $comment): RedirectResponse
     {
-        if (auth()->id() !== $comment->user_id) {
+        $userId = auth()->id();
+        $commentUserId = $comment->user_id;
+        
+        // Handle MongoDB ObjectId comparison
+        if ((string)$userId !== (string)$commentUserId) {
             abort(403, 'Unauthorized action.');
         }
 
-        $postId = $comment->post_id;
+        $post = Post::find($comment->post_id);
         $comment->delete();
         
-        return redirect('/posts/' . $postId)->with('success', 'Comment deleted successfully!');
+        return redirect()->route('posts.show', $post)->with('success', 'Comment deleted successfully!');
     }
 }
